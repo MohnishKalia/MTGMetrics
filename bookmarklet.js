@@ -146,10 +146,16 @@ function bookmarklet() {
         const initialContent = container.querySelector('div');
         if(initialContent) initialContent.remove();
 
+        /* NOTE: Visualization Base URL, change to false if local */
+        const visualizationBase = true
+            ? 'https://mohnishkalia.github.io/MTGMetrics'
+            : 'http://localhost:3000';
+
         container.innerHTML += `
             <form method="dialog">
                 <div>
                     <strong>Scryfall Search Stats - Expand Sections</strong><br>
+                    <strong><a href="${visualizationBase}/?q=${encodeURIComponent(query)}" target="_blank">View detailed visualizations</a></strong><br>
                     <strong>Total Cards Found:</strong> ${totalCards}<br>
                     ${limitMessage}
                     ${renderSectionAsDetails('Color Identities', stats.topIdentities, k => k === 'C' ? 'Colorless' : k, true)}
