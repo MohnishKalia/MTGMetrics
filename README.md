@@ -2,7 +2,13 @@
 
 ## Usage
 
-[Go here](https://mohnishkalia.github.io/MTGMetrics/index.html)
+[Go here](https://mohnishkalia.github.io/MTGMetrics/) for instructions
+
+## Quickstart
+
+```bash
+python3 -m http.serve 3000
+```
 
 ## Contributing
 

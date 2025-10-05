@@ -1,69 +1,70 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Scryfall Stats — Bookmarklet</title>
-    <style>
-        body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; margin:0; background:#0f1724; color:#e6eef8; display:flex; align-items:center; justify-content:center; min-height:100vh }
-        .card { background:#0b1220; padding:24px; border-radius:10px; box-shadow:0 6px 24px rgba(2,6,23,0.6); max-width:680px; width:100% }
-        a.bookmarklet { display:inline-block; background:#0ea5a4; color:#042023; padding:10px 16px; border-radius:8px; font-weight:600; text-decoration:none }
-        button.copy { margin-left:12px; padding:10px 14px; background:#06b6d4; color:#042023; border:0; border-radius:8px; font-weight:600; cursor:pointer }
-        .muted{ color:#9fb0c9; font-size:0.95rem }
-        .hint{ margin-top:12px; font-size:0.9rem }
-        .footer{ margin-top:16px; color:#7f98b0; font-size:0.9rem }
-        pre { background:#031023; padding:12px; border-radius:8px; overflow:auto }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Scryfall Stats — Bookmarklet</title>
+  <style>
+    body { font-family: -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif; margin:0; background:#0f1724; color:#e6eef8; display:flex; align-items:center; justify-content:center; min-height:100vh }
+    .card { background:#0b1220; padding:24px; border-radius:10px; box-shadow:0 6px 24px rgba(2,6,23,0.6); max-width:680px; width:100% }
+    a.bookmarklet { display:inline-block; background:#0ea5a4; color:#042023; padding:10px 16px; border-radius:8px; font-weight:600; text-decoration:none }
+    button.copy { margin-left:12px; padding:10px 14px; background:#06b6d4; color:#042023; border:0; border-radius:8px; font-weight:600; cursor:pointer }
+    .muted{ color:#9fb0c9; font-size:0.95rem }
+    .hint{ margin-top:12px; font-size:0.9rem }
+    .footer{ margin-top:16px; color:#7f98b0; font-size:0.9rem }
+    pre { background:#031023; padding:12px; border-radius:8px; overflow:auto }
+  </style>
 </head>
 <body>
-    <main class="card">
-        <h1 style="margin:0 0 8px 0">Scryfall Search Stats</h1>
-        <p class="muted">Install the bookmarklet by dragging the button to your bookmarks bar, or copy the code and create a new bookmark manually.</p>
+  <main class="card">
+    <h1 style="margin:0 0 8px 0">Scryfall Search Stats</h1>
+    <p class="muted">Install the bookmarklet by dragging the button to your bookmarks bar, or copy the code and create a new bookmark manually.</p>
 
-        <div style="margin-top:16px">
-            <!-- Replace the URL below with your GitHub Pages URL after you deploy -->
-            <a id="bookmarklet" class="bookmarklet" href="#">Scryfall Stats</a>
-            <button id="copy" class="copy">Copy Bookmarklet</button>
-        </div>
+    <div style="margin-top:16px" class="muted">
+      <a id="bookmarklet" class="bookmarklet" href="#">Scryfall Stats</a> <- drag this to bookmark bar
+    </div>
 
-        <!-- <p class="hint">Bookmarklet loads a script from your GitHub Pages site. Replace <code>mohnishkalia.github.io</code> below after deploying.</p> -->
+    <p class="hint">The bookmarklet code is now self-contained to avoid CSP issues.</p>
 
-        <details style="margin-top:12px">
-            <summary class="muted" style="cursor:pointer">Bookmarklet code (click to expand)</summary>
-            <pre id="snippet">javascript:(function(){var s=document.createElement('script');s.src='https://mohnishkalia.github.io/MTGMetrics/bookmarklet.js';document.body.appendChild(s);})();</pre>
-        </details>
+    <details style="margin-top:12px">
+        <summary class="muted" style="cursor:pointer">
+        Bookmarklet code (click to expand)
+        <button id="copy" class="copy">Copy Bookmarklet</button>          
+        </summary>
+      <pre id="snippet"></pre>
+    </details>
 
-        <p class="footer">After deploying to GitHub Pages, update the snippet's URL then drag the link to your bookmarks bar.</p>
-    </main>
+    <a class="footer" href="https://scryfall.com/docs/api">Scryfall API Documentation</a>
+  </main>
 
-    <script>
-        // Provide the default snippet and wire the buttons. Replace the hostURL with your GitHub Pages URL.
-        const hostURL = 'https://mohnishkalia.github.io/MTGMetrics/bookmarklet.js';
-        const snippet = `javascript:(function(){var s=document.createElement('script');s.src='${hostURL}';document.body.appendChild(s);})();`;
+  <script src="bookmarklet.js"></script>
+  <script>
+    // Provide the default snippet and wire the buttons.
+    const snippet = `javascript:(${bookmarklet.toString()})()`;
 
-        const link = document.getElementById('bookmarklet');
-        link.href = snippet;
-        link.setAttribute('title','Drag to bookmarks or right-click -> Add to bookmarks');
+    const link = document.getElementById('bookmarklet');
+    link.href = snippet;
+    link.setAttribute('title','Drag to bookmarks or right-click -> Add to bookmarks');
 
-        const copyBtn = document.getElementById('copy');
-        const snippetEl = document.getElementById('snippet');
-        snippetEl.textContent = snippet;
+    const copyBtn = document.getElementById('copy');
+    const snippetEl = document.getElementById('snippet');
+    snippetEl.textContent = snippet;
 
-        copyBtn.addEventListener('click', async () => {
-            try {
-                if (navigator.clipboard && window.isSecureContext) {
-                    await navigator.clipboard.writeText(snippet);
-                } else {
-                    const t = document.createElement('textarea'); t.value = snippet; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
-                }
-                copyBtn.textContent = 'Copied!';
-                copyBtn.disabled = true;
-                setTimeout(()=>{ copyBtn.textContent='Copy Bookmarklet'; copyBtn.disabled=false },1600);
-            } catch (err) {
-                alert('Could not copy automatically. Select and copy the code from the box.');
-            }
-        });
-    </script>
+    copyBtn.addEventListener('click', async () => {
+      try {
+        if (navigator.clipboard && window.isSecureContext) {
+          await navigator.clipboard.writeText(snippet);
+        } else {
+          const t = document.createElement('textarea'); t.value = snippet; document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t);
+        }
+        copyBtn.textContent = 'Copied!';
+        copyBtn.disabled = true;
+        setTimeout(()=>{ copyBtn.textContent='Copy Bookmarklet'; copyBtn.disabled=false },1600);
+      } catch (err) {
+        alert('Could not copy automatically. Select and copy the code from the box.');
+      }
+    });
+  </script>
 </body>
 </html>
 

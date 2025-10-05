@@ -1,5 +1,8 @@
-(function() {
+function bookmarklet() {
     'use strict';
+
+    /* NOTE: bookmarklet code must be self-contained to avoid CSP issues */
+    /* NOTE: all comments cannot be double-slash style */
 
     /*--- CHECK IF DASHBOARD ALREADY EXISTS ---*/
     const existingDashboard = document.getElementById('scryfall-stats-dashboard');
@@ -27,46 +30,6 @@
     const dashboard = document.createElement('dialog');
     dashboard.id = 'scryfall-stats-dashboard';
     dashboard.innerHTML = `
-        <style>
-            #scryfall-stats-dashboard {
-                position: fixed;
-                top: 20px;
-                right: 20px;
-                width: 300px;
-                z-index: 9999;
-                background-color: #1a202c;
-                color: #e2e8f0;
-                border: 1px solid #4a5568;
-                border-radius: 8px;
-                padding: 16px;
-                box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-                font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
-            }
-            #scryfall-stats-dashboard::backdrop {
-                background: rgba(0, 0, 0, 0.5);
-            }
-            #scryfall-stats-dashboard strong {
-                color: #fff;
-                font-weight: 600;
-            }
-            #scryfall-stats-dashboard button {
-                width: 100%;
-                padding: 8px;
-                margin-top: 16px;
-                background-color: #2d3748;
-                border: 1px solid #4a5568;
-                color: #e2e8f0;
-                border-radius: 4px;
-                cursor: pointer;
-            }
-            #scryfall-stats-dashboard button:hover {
-                background-color: #4a5568;
-            }
-            #scryfall-stats-dashboard em {
-                font-style: italic;
-                color: #a0aec0;
-            }
-        </style>
         <div>Fetching card data...</div>
     `;
     document.body.appendChild(dashboard);
@@ -107,10 +70,13 @@
         const identityCounts = {};
         const cmcCounts = {};
         const typeCounts = {};
+        const rarityCounts = {};
+        const creatureTypeCounts = {};
+        const keywordCounts = {};
 
         cards.forEach(card => {
             /* Color Identity */
-            const identity = card.color_identity.sort().join('') || 'Colorless';
+            const identity = card.color_identity.sort().join('') || 'C';
             identityCounts[identity] = (identityCounts[identity] || 0) + 1;
 
             /* Mana Value (CMC) */
@@ -122,51 +88,81 @@
             mainTypes.split(' ').forEach(type => {
                if(type) typeCounts[type] = (typeCounts[type] || 0) + 1;
             });
+            
+            /* Creature Subtypes */
+            if (typeLine.includes('Creature —')) {
+                const subtypes = typeLine.split(' — ')[1];
+                if(subtypes) {
+                    subtypes.split(' ').forEach(subType => {
+                        if(subType) creatureTypeCounts[subType] = (creatureTypeCounts[subType] || 0) + 1;
+                    });
+                }
+            }
+
+            /* Rarity */
+            rarityCounts[card.rarity] = (rarityCounts[card.rarity] || 0) + 1;
+
+            /* Keywords */
+            if (card.keywords && card.keywords.length > 0) {
+                card.keywords.forEach(kw => {
+                    keywordCounts[kw] = (keywordCounts[kw] || 0) + 1;
+                });
+            }
         });
 
         const getTop = (counts, limit = 5) => Object.entries(counts)
             .sort(([, a], [, b]) => b - a)
             .slice(0, limit);
+        
+        const rarityOrder = { 'mythic': 1, 'rare': 2, 'uncommon': 3, 'common': 4, 'special': 5, 'bonus': 6 };
 
         return {
             topIdentities: getTop(identityCounts),
             topCmcs: Object.entries(cmcCounts).sort(([a,],[b,]) => Number(a) - Number(b)),
             topTypes: getTop(typeCounts),
+            rarities: Object.entries(rarityCounts).sort(([a,],[b,]) => (rarityOrder[a] || 99) - (rarityOrder[b] || 99)),
+            topCreatureTypes: getTop(creatureTypeCounts),
+            topKeywords: getTop(keywordCounts)
         };
     }
 
     function renderDashboard(container, stats, totalCards, wasLimited) {
-        const renderSection = (title, data, formatter) => {
-            if (data.length === 0) return '';
-            return `
-                <div style="margin-top: 12px;">
-                    <strong>${title}</strong>
-                    <div style="padding-left: 8px; border-left: 2px solid #4a5568; margin-top: 4px;">
-                    ${data.map(([key, count]) => `
-                        <div style="font-size: 0.9em;">
-                            ${formatter ? formatter(key) : key}:
-                            <strong>${count}</strong> (${((count/totalCards)*100).toFixed(1)}%)
-                        </div>
-                    `).join('')}
-                    </div>
-                </div>
-            `;
+        const renderSectionAsDetails = (title, data, formatter, isRanked = false) => {
+            if (!data || data.length === 0) return '';
+            const rankEmojis = ['🥇', '🥈', '🥉', '4.', '5.'];
+            let html = `<br><details><summary>▶ <strong>${title}</strong></summary><table>`;
+            for (const [i, [key, count]] of data.entries()) {
+                const label = formatter ? formatter(key) : key;
+                const percentage = ((count / totalCards) * 100).toFixed(1);
+                const rank = isRanked && i < rankEmojis.length ? `${rankEmojis[i]} ` : '';
+                html += `<tr><td>${rank}${label}:&nbsp;</td><td><strong>${count}</strong>&nbsp;</td><td>(${percentage}%)</td></tr>`;
+            }
+            html += '</table></details>';
+            return html;
         };
         
-        const limitMessage = wasLimited ? `<em style="font-size: 0.8em;">Note: Results capped at ${MAX_PAGES_TO_FETCH} pages.</em><br>` : '';
+        const limitMessage = wasLimited ? `<em>Note: Results capped at ${MAX_PAGES_TO_FETCH} pages.</em><br>` : '';
+
+        const initialContent = container.querySelector('div');
+        if(initialContent) initialContent.remove();
 
         container.innerHTML += `
             <form method="dialog">
-                <strong>Scryfall Search Stats</strong><br>
-                <strong>Total Cards Found:</strong> ${totalCards}<br>
-                ${limitMessage}
-                ${renderSection('Top 5 Color Identities', stats.topIdentities)}
-                ${renderSection('Top 5 Card Types', stats.topTypes)}
-                ${renderSection('Mana Curve', stats.topCmcs, (cmc) => `CMC ${cmc}`)}
-                <button>Close</button>
+                <div>
+                    <strong>Scryfall Search Stats - Expand Sections</strong><br>
+                    <strong>Total Cards Found:</strong> ${totalCards}<br>
+                    ${limitMessage}
+                    ${renderSectionAsDetails('Color Identities', stats.topIdentities, k => k === 'C' ? 'Colorless' : k, true)}
+                    ${renderSectionAsDetails('Card Types', stats.topTypes, k => k, true)}
+                    ${renderSectionAsDetails('Rarities', stats.rarities, k => k.charAt(0).toUpperCase() + k.slice(1))}
+                    ${renderSectionAsDetails('Creature Types', stats.topCreatureTypes, k => k, true)}
+                    ${renderSectionAsDetails('Keywords', stats.topKeywords, k => k, true)}
+                    ${renderSectionAsDetails('Mana Curve', stats.topCmcs, (cmc) => `CMC ${cmc}`)}
+                    <br><br>
+                    <button>Close</button>
+                </div>
             </form>
         `;
-        container.querySelector('div').remove();
 
         /* The dialog element can be closed by its form's button or the ESC key. */
         container.addEventListener('close', () => {
@@ -195,4 +191,4 @@
     }
 
     main();
-})();
+}
