@@ -61,6 +61,18 @@
           </div>
         </div>
       </section>
+
+      <section class="py-6 sm:py-8">
+        <div class="max-w-3xl mx-auto bg-slate-800 p-6 rounded-lg">
+          <h2 class="text-2xl font-bold text-white">No Bookmarklet? Paste a Scryfall Search URL</h2>
+          <p class="mt-2 text-slate-300">Paste a full Scryfall search results URL and load the analysis directly.</p>
+          <form id="scryfall-url-form" class="mt-4 flex flex-col sm:flex-row gap-3">
+            <input id="scryfall-url-input" type="url" required class="w-full rounded-lg bg-slate-900 border border-slate-700 px-4 py-3 text-slate-100" placeholder="https://scryfall.com/search?q=..." />
+            <button type="submit" class="bg-cyan-500 hover:bg-cyan-600 text-slate-900 font-bold py-3 px-6 rounded-lg">Analyze URL</button>
+          </form>
+          <p id="scryfall-url-error" class="mt-2 text-sm text-red-400 hidden">Please enter a valid Scryfall search URL with a query.</p>
+        </div>
+      </section>
     </main>
   </div>
 
@@ -83,6 +95,21 @@
     const snippet = `javascript:(${bookmarklet.toString()})()`;
   document.getElementById('bookmarklet').href = snippet;
   document.getElementById('snippet').textContent = snippet;
+  document.getElementById('scryfall-url-form').addEventListener('submit', (event) => {
+    event.preventDefault();
+    const inputEl = document.getElementById('scryfall-url-input');
+    const errorEl = document.getElementById('scryfall-url-error');
+    try {
+      const parsedUrl = new URL(inputEl.value.trim());
+      const searchQuery = new URLSearchParams(parsedUrl.search).get('q');
+      if (!parsedUrl.hostname.includes('scryfall.com') || !parsedUrl.pathname.includes('/search') || !searchQuery) {
+        throw new Error('Invalid Scryfall search URL');
+      }
+      window.location.href = `${window.location.pathname}?q=${encodeURIComponent(searchQuery)}`;
+    } catch (e) {
+      errorEl.classList.remove('hidden');
+    }
+  });
 
     // --- Stats Display ---
     window.addEventListener('load', async () => {
