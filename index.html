@@ -99,13 +99,15 @@
     event.preventDefault();
     const inputEl = document.getElementById('scryfall-url-input');
     const errorEl = document.getElementById('scryfall-url-error');
+    errorEl.classList.add('hidden');
     try {
       const parsedUrl = new URL(inputEl.value.trim());
       const searchQuery = new URLSearchParams(parsedUrl.search).get('q');
-      if (!parsedUrl.hostname.includes('scryfall.com') || !parsedUrl.pathname.includes('/search') || !searchQuery) {
+      const isScryfallHost = parsedUrl.hostname === 'scryfall.com' || parsedUrl.hostname.endsWith('.scryfall.com');
+      if (!isScryfallHost || parsedUrl.pathname !== '/search' || !searchQuery) {
         throw new Error('Invalid Scryfall search URL');
       }
-      window.location.href = `${window.location.pathname}?q=${encodeURIComponent(searchQuery)}`;
+      window.location.search = `?q=${encodeURIComponent(searchQuery)}`;
     } catch (e) {
       errorEl.classList.remove('hidden');
     }
